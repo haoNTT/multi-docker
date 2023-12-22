@@ -1,0 +1,27 @@
+sudo: required
+language: generic
+
+services:
+  - docker
+
+before_install: # If you have more than one image to test, build them all at this module.
+  - docker build -t ht/docker-react -f ./client/Dockerfile.dev ./client
+
+script: # If you have more than one image to test, write all the scripts here.
+  - docker run -e CI=true ht/docker-react npm run test
+
+after_success:
+  - docker build -t ht/multi-client ./client
+  - docker build -t ht/multi-nginx ./nginx
+  - docker build -t ht/multi-server ./server
+  - docker build -t ht/multi-worker ./worker
+
+  # Log in to the Docker using CLI
+  - echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_ID" --password-stdin
+
+  # Once logged in, push the above built images to Docker Hub
+  - docker push ht/multi-client
+  - docker push ht/multi-nginx
+  - docker push ht/multi-server
+  - docker push ht/multi-worker
+  
