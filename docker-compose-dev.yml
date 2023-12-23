@@ -1,0 +1,52 @@
+version: '3'
+services:
+  nginx:
+    depends_on:
+      - api
+      - client
+    restart: always
+    build: 
+      context: ./nginx
+      dockerfile: Dockerfile.dev
+    ports:
+      - '3050:80'
+  redis:
+    image: redis:latest # we can just use the existing image for the default services
+  postgres:
+    image: postgres:latest
+    environment:
+      - POSTGRES_PASSWORD=postgres_password
+  api:
+    build: 
+      context: ./server
+      dockerfile: Dockerfile.dev
+    volumes:
+      - /app/node_modules
+      - ./server:/app
+    environment:
+      - REDIS_HOST=redis # This just the name of 'redis' service above
+      - REDIS_PORT=6379 # Just use the redis default port
+      - PGUSER=postgres # A random name
+      - PGHOST=postgres # This is the name of 'postgres' service above
+      - PGDATABASE=postgres # This is the default dataset name to use
+      - PGPASSWORD=postgres_password # This is the default password for postgres image
+      - PGPORT=5432 # Default port fot postgres
+  client:
+    environment:
+      - WDS_SOCKET_PORT=0
+    build: 
+      context: ./client
+      dockerfile: Dockerfile.dev
+    volumes:
+      - /app/node_modules
+      - ./client:/app
+  worker:
+    build: 
+      context: ./worker
+      dockerfile: Dockerfile.dev
+    volumes:
+      - /app/node_modules
+      - ./worker:/app
+    environment:
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
